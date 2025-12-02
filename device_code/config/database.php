@@ -5,7 +5,7 @@ return [
     'connections' => [
         'mysql' => [
             'driver' => 'mysql',
-            'host' => '127.0.0.1',
+            'host' => '172.31.3.147',
             'port' => 3306,
             'database' => 'device_fingerprint',
             'username' => 'device_fingerprint',
