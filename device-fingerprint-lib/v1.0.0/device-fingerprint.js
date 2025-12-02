@@ -170,12 +170,8 @@ class DeviceFingerprint {
             ua = ua.replace(/\d{10}/g, 'XXXXXXXXXX');
 
             // -----------------------------
-            // ③ ⭐最关键：移除所有浏览器内部版本号
+            // ③ ⭐移除所有浏览器内部版本号
             // -----------------------------
-            // Chrome/120.0.6099.231 → Chrome/X.X.X
-            // Safari/537.36 → Safari/X.X.X
-            // AppleWebKit/605.1.15 → AppleWebKit/X.X.X
-            // Mobile/15E148 → Mobile/XXXXX
             ua = ua.replace(/\b([A-Za-z]+)\/[\d\._]+/g, '$1/X.X.X');
 
             // -----------------------------
@@ -188,6 +184,11 @@ class DeviceFingerprint {
             // -----------------------------
             ua = ua.replace(/MicroMessenger\/[\d\.]+\(\w+\)/g, 'MicroMessenger/X.X.X(XXXX)');
             ua = ua.replace(/MicroMessenger\/[\d\.]+/g, 'MicroMessenger/X.X.X');
+
+            // -----------------------------
+            // ⑦ 固定网络类型
+            // -----------------------------
+            ua = ua.replace(/AlipayDefined\(nt:[A-Za-z0-9]+,ws:/g, 'AlipayDefined(nt:XX,ws:');
 
             // -----------------------------
             // ⑥ 压缩多余空格
@@ -203,6 +204,7 @@ class DeviceFingerprint {
             return userAgent;
         }
     }
+
 
     /**
      * 快速稳定性检查
