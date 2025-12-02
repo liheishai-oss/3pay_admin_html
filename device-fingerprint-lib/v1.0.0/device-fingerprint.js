@@ -151,26 +151,53 @@ class DeviceFingerprint {
      */
     normalizeUserAgent(userAgent) {
         try {
-            let normalizedUA = userAgent;
-            
-            // 移除支付宝客户端中的动态ChannelId
-            normalizedUA = normalizedUA.replace(/ChannelId\(\d+\)/g, 'ChannelId(XX)');
-            
-            // 移除其他可能的动态标识符
-            normalizedUA = normalizedUA.replace(/UWS\/[\d\.]+/g, 'UWS/X.X.X');
-            normalizedUA = normalizedUA.replace(/UCBS\/[\d\._]+/g, 'UCBS/X.X.X');
-            normalizedUA = normalizedUA.replace(/NebulaSDK\/[\d\.]+/g, 'NebulaSDK/X.X.X');
-            normalizedUA = normalizedUA.replace(/AliApp\(AP\/[\d\.]+\)/g, 'AliApp(AP/X.X.X)');
-            normalizedUA = normalizedUA.replace(/AlipayClient\/[\d\.]+/g, 'AlipayClient/X.X.X');
-            
-            // 移除时间戳相关的动态内容
-            normalizedUA = normalizedUA.replace(/\d{13}/g, 'XXXXXXXXXXXXX'); // 13位时间戳
-            normalizedUA = normalizedUA.replace(/\d{10}/g, 'XXXXXXXXXX'); // 10位时间戳
-            
+            let ua = userAgent;
+
+            // -----------------------------
+            // ① 移除支付宝等 App 的动态标识符
+            // -----------------------------
+            ua = ua.replace(/ChannelId\(\d+\)/g, 'ChannelId(XX)');
+            ua = ua.replace(/UWS\/[\d\.]+/g, 'UWS/X.X.X');
+            ua = ua.replace(/UCBS\/[\d\._]+/g, 'UCBS/X.X.X');
+            ua = ua.replace(/NebulaSDK\/[\d\.]+/g, 'NebulaSDK/X.X.X');
+            ua = ua.replace(/AliApp\(AP\/[\d\.]+\)/g, 'AliApp(AP/X.X.X)');
+            ua = ua.replace(/AlipayClient\/[\d\.]+/g, 'AlipayClient/X.X.X');
+
+            // -----------------------------
+            // ② 移除所有可能出现的时间戳
+            // -----------------------------
+            ua = ua.replace(/\d{13}/g, 'XXXXXXXXXXXXX');
+            ua = ua.replace(/\d{10}/g, 'XXXXXXXXXX');
+
+            // -----------------------------
+            // ③ ⭐最关键：移除所有浏览器内部版本号
+            // -----------------------------
+            // Chrome/120.0.6099.231 → Chrome/X.X.X
+            // Safari/537.36 → Safari/X.X.X
+            // AppleWebKit/605.1.15 → AppleWebKit/X.X.X
+            // Mobile/15E148 → Mobile/XXXXX
+            ua = ua.replace(/\b([A-Za-z]+)\/[\d\._]+/g, '$1/X.X.X');
+
+            // -----------------------------
+            // ④ Mobile/xxxxxx（iPhone 的 Build 号）
+            // -----------------------------
+            ua = ua.replace(/Mobile\/[A-Za-z0-9]+/g, 'Mobile/XXXXX');
+
+            // -----------------------------
+            // ⑤ 微信版本号（非常容易变）
+            // -----------------------------
+            ua = ua.replace(/MicroMessenger\/[\d\.]+\(\w+\)/g, 'MicroMessenger/X.X.X(XXXX)');
+            ua = ua.replace(/MicroMessenger\/[\d\.]+/g, 'MicroMessenger/X.X.X');
+
+            // -----------------------------
+            // ⑥ 压缩多余空格
+            // -----------------------------
+            ua = ua.replace(/\s+/g, ' ').trim();
+
             console.log('原始UserAgent:', userAgent);
-            console.log('标准化UserAgent:', normalizedUA);
-            
-            return normalizedUA;
+            console.log('标准化UserAgent:', ua);
+
+            return ua;
         } catch (error) {
             console.log('UserAgent标准化失败:', error.message);
             return userAgent;
@@ -276,7 +303,7 @@ class DeviceFingerprint {
         });
 
         // Canvas指纹
-        components.canvasFingerprint = this.getCanvasFingerprint();
+        // components.canvasFingerprint = this.getCanvasFingerprint();
 
         // WebGL指纹
         components.webglFingerprint = this.getWebGLFingerprint();
@@ -322,33 +349,33 @@ class DeviceFingerprint {
         return components;
     }
 
-    /**
-     * Canvas指纹识别 - 使用更稳定的方法
-     */
-    getCanvasFingerprint() {
-        try {
-            // 在Node.js环境中返回固定指纹
-            if (typeof document === 'undefined') {
-                return 'canvas_nodejs_simulated_fixed';
-            }
-
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            
-            if (!ctx) {
-                return 'canvas_no_context';
-            }
-            
-            // 使用更稳定的Canvas指纹方法
-            // 不依赖具体的绘制内容，而是基于Canvas的渲染特性
-            const fingerprint = this.generateStableCanvasFingerprint(canvas, ctx);
-            console.log('Canvas指纹:', fingerprint);
-            return fingerprint;
-        } catch (error) {
-            console.log('Canvas指纹错误:', error.message);
-            return 'canvas_error_' + error.message.substring(0, 20);
-        }
-    }
+    // /**
+    //  * Canvas指纹识别 - 使用更稳定的方法
+    //  */
+    // getCanvasFingerprint() {
+    //     try {
+    //         // 在Node.js环境中返回固定指纹
+    //         if (typeof document === 'undefined') {
+    //             return 'canvas_nodejs_simulated_fixed';
+    //         }
+    //
+    //         const canvas = document.createElement('canvas');
+    //         const ctx = canvas.getContext('2d');
+    //
+    //         if (!ctx) {
+    //             return 'canvas_no_context';
+    //         }
+    //
+    //         // 使用更稳定的Canvas指纹方法
+    //         // 不依赖具体的绘制内容，而是基于Canvas的渲染特性
+    //         const fingerprint = this.generateStableCanvasFingerprint(canvas, ctx);
+    //         console.log('Canvas指纹:', fingerprint);
+    //         return fingerprint;
+    //     } catch (error) {
+    //         console.log('Canvas指纹错误:', error.message);
+    //         return 'canvas_error_' + error.message.substring(0, 20);
+    //     }
+    // }
 
     /**
      * 生成稳定的Canvas指纹
@@ -1236,179 +1263,8 @@ class DeviceFingerprint {
         }
     }
 
-    /**
-     * 检测DNS泄露
-     */
-    async detectDNSLeak() {
-        try {
-            // 检查是否在浏览器环境中
-            if (typeof window === 'undefined' || typeof fetch === 'undefined') {
-                return { detected: false, reason: '需要在浏览器环境中检测DNS' };
-            }
 
-            // 检测DNS解析异常
-            const testDomains = [
-                'google.com',
-                'facebook.com',
-                'amazon.com'
-            ];
 
-            const dnsResults = [];
-            for (const domain of testDomains) {
-                try {
-                    const startTime = performance.now();
-                    await fetch(`https://${domain}`, { 
-                        method: 'HEAD',
-                        mode: 'no-cors',
-                        cache: 'no-cache'
-                    });
-                    const endTime = performance.now();
-                    dnsResults.push({
-                        domain,
-                        responseTime: endTime - startTime
-                    });
-                } catch (error) {
-                    dnsResults.push({
-                        domain,
-                        error: error.message
-                    });
-                }
-            }
-
-            // 分析DNS响应时间异常
-            const avgResponseTime = dnsResults
-                .filter(r => r.responseTime)
-                .reduce((sum, r) => sum + r.responseTime, 0) / dnsResults.length;
-
-            const suspiciousResponseTime = avgResponseTime > 2000; // 超过2秒认为可疑
-
-            return {
-                detected: suspiciousResponseTime,
-                dnsResults,
-                avgResponseTime,
-                reason: suspiciousResponseTime ? 'DNS响应时间异常' : 'DNS响应正常'
-            };
-
-        } catch (error) {
-            return { detected: false, reason: 'DNS检测异常: ' + error.message };
-        }
-    }
-
-    /**
-     * 检测浏览器指纹异常
-     */
-    detectFingerprintAnomaly() {
-        const anomalies = [];
-
-        try {
-            // 检查是否在浏览器环境中
-            if (typeof window === 'undefined' || typeof document === 'undefined' || typeof navigator === 'undefined') {
-                return { detected: false, reason: '需要在浏览器环境中检测指纹异常' };
-            }
-
-            // 检测UserAgent异常
-            const userAgent = navigator.userAgent;
-            if (userAgent.includes('HeadlessChrome') || 
-                userAgent.includes('PhantomJS') ||
-                userAgent.includes('Selenium')) {
-                anomalies.push('自动化工具特征');
-            }
-
-            // 检测WebGL异常
-            const canvas = document.createElement('canvas');
-            const gl = canvas.getContext('webgl');
-            if (gl) {
-                const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-                if (debugInfo) {
-                    const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
-                    if (renderer.includes('Software') || renderer.includes('Virtual')) {
-                        anomalies.push('虚拟化环境特征');
-                    }
-                }
-            }
-
-            // 检测屏幕分辨率异常
-            if (typeof screen !== 'undefined' && (screen.width === 0 || screen.height === 0)) {
-                anomalies.push('屏幕分辨率异常');
-            }
-
-            // 检测插件数量异常
-            if (navigator.plugins.length === 0) {
-                anomalies.push('无插件（可能为无头浏览器）');
-            }
-
-            return {
-                detected: anomalies.length > 0,
-                anomalies,
-                reason: anomalies.length > 0 ? '检测到指纹异常' : '指纹正常'
-            };
-
-        } catch (error) {
-            return { detected: false, reason: '指纹检测异常: ' + error.message };
-        }
-    }
-
-    /**
-     * 检测VPN
-     */
-    async detectVPN() {
-        try {
-            // 检查是否在浏览器环境中
-            if (typeof window === 'undefined' || typeof navigator === 'undefined') {
-                return { detected: false, reason: '需要在浏览器环境中检测VPN' };
-            }
-
-            // 检测常见的VPN特征
-            const vpnIndicators = [];
-
-            // 检测时区与语言不匹配
-            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-            const language = navigator.language;
-            
-            // 简单的时区语言匹配检测
-            if (timezone.includes('America') && !language.startsWith('en')) {
-                vpnIndicators.push('时区语言不匹配');
-            }
-            if (timezone.includes('Europe') && !language.startsWith('en') && !language.startsWith('de') && !language.startsWith('fr')) {
-                vpnIndicators.push('时区语言不匹配');
-            }
-
-            // 检测屏幕分辨率异常（某些VPN客户端会修改）
-            if (typeof screen !== 'undefined' && (screen.width < 1024 || screen.height < 768)) {
-                vpnIndicators.push('屏幕分辨率异常');
-            }
-
-            // 检测硬件并发数异常
-            if (navigator.hardwareConcurrency < 2) {
-                vpnIndicators.push('硬件并发数异常');
-            }
-
-            return {
-                detected: vpnIndicators.length > 0,
-                indicators: vpnIndicators,
-                reason: vpnIndicators.length > 0 ? '检测到VPN特征' : '未检测到VPN特征'
-            };
-
-        } catch (error) {
-            return { detected: false, reason: 'VPN检测异常: ' + error.message };
-        }
-    }
-
-    /**
-     * 确定代理类型
-     */
-    determineProxyType(details) {
-        const types = [];
-        
-        if (details.httpHeaders && details.httpHeaders.detected) types.push('HTTP代理');
-        if (details.webrtcLeak && details.webrtcLeak.detected) types.push('WebRTC泄露');
-        if (details.timezoneMismatch && details.timezoneMismatch.detected) types.push('时区不匹配');
-        if (details.dnsLeak && details.dnsLeak.detected) types.push('DNS泄露');
-        if (details.fingerprintAnomaly && details.fingerprintAnomaly.detected) types.push('指纹异常');
-        if (details.vpnDetection && details.vpnDetection.detected) types.push('VPN');
-
-        return types.length > 0 ? types.join(', ') : '未知代理';
-    }
 
     /**
      * 获取设备状态
